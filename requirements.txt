@@ -1,0 +1,9 @@
+torch
+tensorflow
+opencv-python
+huggingface-hub
+ultralytics
+numpy
+pandas
+scipy
+shapely

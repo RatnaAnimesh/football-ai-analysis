@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+.Python
+venv/
+.venv/
+env/
+.env/
+
+# Data and Models (generated)
+*.csv
+*.mp4
+*.pt
+*.log
+
+# IDEs
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
