@@ -1,4 +1,4 @@
-# Quant Football Analysis
+# Football Analysis
 
 This repository contains code for advanced football analytics, leveraging computer vision and data science to derive proprietary insights from match footage.
 
