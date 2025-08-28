@@ -1,155 +1,127 @@
+
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.spatial import Voronoi, voronoi_plot_2d
+import cv2
 import os
-import tempfile
-import shutil
+from scipy.spatial import Voronoi
+from shapely.geometry import Polygon
 from tqdm import tqdm
-import subprocess
 
-def draw_pitch(ax):
-    """
-    Draws a basic football pitch on the given matplotlib axes.
-    """
-    pitch_length = 1000  # Example pixel length
-    pitch_width = 600   # Example pixel width
+# --- CONFIGURATION ---
+PITCH_LENGTH_PX = 1050
+PITCH_WIDTH_PX = 680
+TEAM_COLORS = {0: (255, 100, 100), 1: (100, 100, 255)} # BGR format for OpenCV
+BALL_COLOR = (255, 255, 0)
+POSSESSION_HIGHLIGHT_COLOR = (0, 255, 255)
+LBP_COLOR = (0, 255, 0)
 
-    ax.plot([0, pitch_length], [0, 0], color="black")
-    ax.plot([0, pitch_length], [pitch_width, pitch_width], color="black")
-    ax.plot([0, 0], [0, pitch_width], color="black")
-    ax.plot([pitch_length, pitch_length], [0, pitch_width], color="black")
+# --- DRAWING UTILITIES ---
 
-    center_x, center_y = pitch_length / 2, pitch_width / 2
-    center_circle = plt.Circle((center_x, center_y), 100, color="black", fill=False)
-    ax.add_patch(center_circle)
-    ax.plot([center_x, center_x], [0, pitch_width], color="black")
+def draw_pitch(image):
+    """Draws a football pitch on an image."""
+    # Pitch boundaries
+    cv2.rectangle(image, (0, 0), (PITCH_LENGTH_PX, PITCH_WIDTH_PX), (0, 0, 0), 2)
+    # Center line
+    cv2.line(image, (PITCH_LENGTH_PX // 2, 0), (PITCH_LENGTH_PX // 2, PITCH_WIDTH_PX), (0, 0, 0), 2)
+    # Center circle
+    cv2.circle(image, (PITCH_LENGTH_PX // 2, PITCH_WIDTH_PX // 2), 70, (0, 0, 0), 2)
+    return image
 
-    ax.plot([0, 165], [pitch_width/2 - 185, pitch_width/2 - 185], color="black")
-    ax.plot([0, 165], [pitch_width/2 + 185, pitch_width/2 + 185], color="black")
-    ax.plot([165, 165], [pitch_width/2 - 185, pitch_width/2 + 185], color="black")
-    ax.plot([pitch_length - 165, pitch_length], [pitch_width/2 - 185, pitch_width/2 - 185], color="black")
-    ax.plot([pitch_length - 165, pitch_length], [pitch_width/2 + 185, pitch_width/2 + 185], color="black")
-    ax.plot([pitch_length - 165, pitch_length - 165], [pitch_width/2 - 185, pitch_width/2 + 185], color="black")
+# --- MAIN VISUALIZATION FUNCTION ---
 
-    ax.plot([0, 55], [pitch_width/2 - 90, pitch_width/2 - 90], color="black")
-    ax.plot([0, 55], [pitch_width/2 + 90, pitch_width/2 + 90], color="black")
-    ax.plot([55, 55], [pitch_width/2 - 90, pitch_width/2 + 90], color="black")
-    ax.plot([pitch_length - 55, pitch_length], [pitch_width/2 - 90, pitch_width/2 - 90], color="black")
-    ax.plot([pitch_length - 55, pitch_length], [pitch_width/2 + 90, pitch_width/2 + 90], color="black")
-    ax.plot([pitch_length - 55, pitch_length - 55], [pitch_width/2 - 90, pitch_width/2 + 90], color="black")
-
-    ax.set_xlim(-10, pitch_length + 10)
-    ax.set_ylim(-10, pitch_width + 10)
-    ax.set_aspect('equal', adjustable='box')
-    ax.set_facecolor('#3CB371') # Green color for pitch
-
-
-def generate_frame_plot(df_frame, frame_number, output_path):
-    """
-    Generates and saves a single frame plot.
-    """
-    fig, ax = plt.subplots(figsize=(12, 8))
-    draw_pitch(ax)
-
-    team_colors = {0: 'blue', 1: 'red'}
-    df_frame['team_color'] = df_frame['track_id'].apply(lambda x: team_colors[x % 2])
-
-    for idx, row in df_frame.iterrows():
-        ax.plot(row['center_x'], row['center_y'], 'o', color=row['team_color'], markersize=8)
-        ax.text(row['center_x'] + 5, row['center_y'] + 5, str(row['track_id']), color=row['team_color'], fontsize=9)
-
-        arrow_scale = 5.0 
-        ax.quiver(row['center_x'], row['center_y'], 
-                  row['velocity_x'] * arrow_scale, row['velocity_y'] * arrow_scale, 
-                  color=row['team_color'], scale_units='xy', angles='xy', scale=1, width=0.005)
-
-    points = df_frame[['center_x', 'center_y']].values
-    # Voronoi needs at least 4 non-collinear points for a 2D simplex, or 2 distinct points for a line
-    # To be safe and avoid QhullError, we check for at least 4 distinct points.
-    if len(points) >= 4 and len(np.unique(points, axis=0)) >= 4: 
-        try:
-            vor = Voronoi(points)
-            voronoi_plot_2d(vor, ax=ax, show_points=False, show_vertices=False, line_colors='gray', line_width=0.5)
-        except Exception as e:
-            print(f"Warning: Could not generate Voronoi for frame {frame_number}. Error: {e}")
-            print(f"Points: {points}")
-
-    ax.set_title(f"Dynamic Pitch Control - Frame {frame_number}")
-    ax.set_xlabel("X-coordinate")
-    ax.set_ylabel("Y-coordinate")
-    ax.grid(True, linestyle='--', alpha=0.6)
-    
-    plt.savefig(output_path, dpi=100) # Save figure
-    plt.close(fig) # Close figure to free memory
-
-
-def generate_video(input_csv_path, output_video_path, fps=5):
-    """
-    Generates a video from tracking data.
-    """
-    print(f"Loading data from {input_csv_path}...")
-    df_all_frames = pd.read_csv(input_csv_path)
-    unique_frames = sorted(df_all_frames['frame'].unique())
-
-    if not unique_frames:
-        print("No frames to process for video.")
+def generate_tactical_video(output_video_path, fps=10):
+    """Generates a tactical video with analytics overlays."""
+    # --- Load Data ---
+    print("Loading analytics data...")
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        df_tracking = pd.read_csv(os.path.join(project_dir, 'tracking_data.csv'))
+        df_possession = pd.read_csv(os.path.join(project_dir, 'possession_events.csv'))
+        df_lbp = pd.read_csv(os.path.join(project_dir, 'line_breaking_passes.csv'))
+        df_pressure = pd.read_csv(os.path.join(project_dir, 'pressure_metrics.csv'))
+        team_mapping = pd.read_csv(os.path.join(project_dir, 'team_mapping.csv')).set_index('track_id')['team_id'].to_dict()
+    except FileNotFoundError as e:
+        print(f"Error: Missing analytics file. {e}")
+        print("Please run the full analysis.py script first.")
         return
 
-    # Create a temporary directory for image frames
-    temp_dir = tempfile.mkdtemp()
-    print(f"Saving temporary image frames to: {temp_dir}")
+    # --- Setup Video Writer ---
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    writer = cv2.VideoWriter(output_video_path, fourcc, fps, (PITCH_LENGTH_PX, PITCH_WIDTH_PX))
 
-    # Generate and save each frame plot
-    print("Generating individual frame images...")
-    for frame_num in tqdm(unique_frames):
-        df_frame = df_all_frames[df_all_frames['frame'] == frame_num].copy()
-        if not df_frame.empty:
-            output_img_path = os.path.join(temp_dir, f"frame_{frame_num:06d}.png")
-            generate_frame_plot(df_frame, frame_num, output_img_path)
+    # --- Process Frames ---
+    for frame_num in tqdm(sorted(df_tracking['frame'].unique()), desc="Generating Video"):
+        # Create a fresh pitch image for each frame
+        pitch_image = np.full((PITCH_WIDTH_PX, PITCH_LENGTH_PX, 3), (60, 179, 113), dtype=np.uint8) # Green pitch
+        pitch_image = draw_pitch(pitch_image)
+        overlay = pitch_image.copy()
 
-    # Use ffmpeg to stitch images into a video
-    print("Stitching images into video using ffmpeg...")
-    # Adjust -r (frame rate) based on your desired video speed
-    # Adjust -crf (constant rate factor) for quality (lower is better, 23 is default)
-    # Adjust -vf scale for output resolution if needed
-    ffmpeg_command = [
-        "ffmpeg",
-        "-r", str(fps),
-        "-i", os.path.join(temp_dir, "frame_%06d.png"),
-        "-c:v", "libx264",
-        "-vf", "fps=25,format=yuv420p", # Output at 25fps, yuv420p for broad compatibility
-        "-crf", "23",
-        "-pix_fmt", "yuv420p",
-        output_video_path
-    ]
-    
-    try:
-        subprocess.run(ffmpeg_command, check=True, capture_output=True, text=True)
-        print(f"Video successfully created at {output_video_path}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error during ffmpeg execution: {e}")
-        print(f"Stdout: {e.stdout}")
-        print(f"Stderr: {e.stderr}")
-    except FileNotFoundError:
-        print("ffmpeg command not found. Please ensure ffmpeg is installed and in your system's PATH.")
+        df_frame = df_tracking[df_tracking['frame'] == frame_num]
+        players_in_frame = df_frame[df_frame['class_name'].isin(['player', 'goalkeeper'])]
+        ball_in_frame = df_frame[df_frame['class_name'] == 'ball']
 
-    # Clean up temporary directory
-    print("Cleaning up temporary files...")
-    shutil.rmtree(temp_dir)
-    print("Cleanup complete.")
+        # --- 1. Pitch Control Overlay ---
+        points = players_in_frame[['center_x', 'center_y']].values
+        if len(points) >= 4:
+            try:
+                vor = Voronoi(points)
+                pitch_polygon = Polygon([(0, 0), (PITCH_LENGTH_PX, 0), (PITCH_LENGTH_PX, PITCH_WIDTH_PX), (0, PITCH_WIDTH_PX)])
+                for i, region_idx in enumerate(vor.point_region):
+                    if region_idx != -1 and -1 not in vor.regions[region_idx]:
+                        region_poly = Polygon([vor.vertices[v] for v in vor.regions[region_idx]])
+                        if region_poly.is_valid:
+                            clipped_region = pitch_polygon.intersection(region_poly)
+                            track_id = players_in_frame.iloc[i]['track_id']
+                            team_id = team_mapping.get(track_id)
+                            if team_id is not None:
+                                pts = np.array(clipped_region.exterior.coords, dtype=np.int32)
+                                cv2.fillPoly(overlay, [pts], TEAM_COLORS[team_id], lineType=cv2.LINE_AA)
+            except Exception:
+                pass # Ignore frames where Voronoi fails
+        
+        # Blend overlay with pitch
+        alpha = 0.25
+        cv2.addWeighted(overlay, alpha, pitch_image, 1 - alpha, 0, pitch_image)
 
+        # --- 2. Player and Ball Positions ---
+        for _, player in players_in_frame.iterrows():
+            pos = (int(player['center_x']), int(player['center_y']))
+            team_id = team_mapping.get(player['track_id'])
+            if team_id is not None:
+                cv2.circle(pitch_image, pos, 10, TEAM_COLORS[team_id], -1)
+                cv2.putText(pitch_image, str(int(player['track_id'])), (pos[0]+5, pos[1]-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+        
+        if not ball_in_frame.empty:
+            pos = (int(ball_in_frame.iloc[0]['center_x']), int(ball_in_frame.iloc[0]['center_y']))
+            cv2.circle(pitch_image, pos, 6, BALL_COLOR, -1)
+
+        # --- 3. Analytics Overlays ---
+        possession_info = df_possession[df_possession['frame'] == frame_num]
+        if not possession_info.empty and pd.notna(possession_info.iloc[0]['possessor_id']):
+            possessor_id = possession_info.iloc[0]['possessor_id']
+            possessor_data = df_frame[df_frame['track_id'] == possessor_id]
+            if not possessor_data.empty:
+                pos = (int(possessor_data.iloc[0]['center_x']), int(possessor_data.iloc[0]['center_y']))
+                cv2.circle(pitch_image, pos, 12, POSSESSION_HIGHLIGHT_COLOR, 3) # Highlight possessor
+
+                pressure_info = df_pressure[df_pressure['frame'] == frame_num]
+                if not pressure_info.empty:
+                    num_press = pressure_info.iloc[0]['num_pressuring_opponents']
+                    cv2.putText(pitch_image, f"P:{int(num_press)}", (pos[0]+15, pos[1]+15), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,0), 2)
+
+        lbp_info = df_lbp[df_lbp['frame'] == frame_num]
+        if not lbp_info.empty and lbp_info.iloc[0]['is_line_breaking']:
+            passer_id = lbp_info.iloc[0]['passer_id']
+            receiver_id = lbp_info.iloc[0]['receiver_id']
+            passer_pos = df_frame[df_frame['track_id'] == passer_id][['center_x', 'center_y']].iloc[0]
+            receiver_pos = df_frame[df_frame['track_id'] == receiver_id][['center_x', 'center_y']].iloc[0]
+            cv2.arrowedLine(pitch_image, (int(passer_pos[0]), int(passer_pos[1])), (int(receiver_pos[0]), int(receiver_pos[1])), LBP_COLOR, 2, tipLength=0.05)
+
+        writer.write(pitch_image)
+
+    writer.release()
+    print(f"Tactical video saved to {output_video_path}")
 
 if __name__ == '__main__':
-    project_dir = os.path.dirname(os.path.abspath(__file__))
-    input_csv = "tracking_data_with_velocities.csv"
-    output_video = "dynamic_pitch_control.mp4"
-    
-    input_path = os.path.join(project_dir, input_csv)
-    output_path = os.path.join(project_dir, output_video)
-
-    if not os.path.exists(input_path):
-        print(f"Error: Input file not found at {input_path}")
-        print("Please run analysis.py first to generate the enriched tracking data.")
-    else:
-        generate_video(input_path, output_path, fps=5) # fps should match the effective frame rate of your data (original_fps / frame_skip)
+    output_video = "tactical_video.mp4"
+    generate_tactical_video(output_video)
