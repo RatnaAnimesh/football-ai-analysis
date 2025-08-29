@@ -110,8 +110,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--model', 
         type=str,
-        default='yolov8l.pt',
-        help='Path to the YOLOv8 model .pt file.'
+        default='runs/train/football_v3_large_fast/weights/best.pt',
+        help='Path to the YOLOv8 model .pt file. Defaults to the best model from the last training run.'
+    )
+    parser.add_argument(
+        '--fps',
+        type=int,
+        default=30,
+        help='Frames per second of the input video. Used for velocity calculations.'
     )
     parser.add_argument(
         '--video',
@@ -126,6 +132,9 @@ if __name__ == '__main__':
     print(f"Using device: {device}")
 
     # --- Model Loading ---
+    if not os.path.exists(args.model):
+        print(f"Error: Model file not found at {args.model}")
+        return
     print(f"Loading model: {args.model}")
     model = YOLO(args.model).to(device)
 
@@ -135,5 +144,10 @@ if __name__ == '__main__':
     
     output_csv = "tracking_data.csv"
     output_csv_path = os.path.join(project_dir, output_csv)
+
+    metadata_path = os.path.join(project_dir, "metadata.json")
+    with open(metadata_path, 'w') as f:
+        json.dump({'fps': args.fps}, f)
+    print(f"Saved video metadata to {metadata_path}")
 
     process_video_in_batches(video_path, model, output_csv_path)

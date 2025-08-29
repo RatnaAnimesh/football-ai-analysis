@@ -31,11 +31,14 @@ def train_model():
         epochs=50,
         # --- OPTIMIZATIONS ---
         device=device,          # Explicitly set the device for training
-        imgsz=416,              # Reduced image size for faster training
+        imgsz=416,              # Optimized image size for balanced performance
         batch=8,                # A safe batch size for a large model on 16GB VRAM
         workers=8,              # Number of threads for data loading
         amp=True,               # Enable Automatic Mixed Precision
         # --- END OPTIMIZATIONS ---
+        scale=0.75,             # Scale augmentation (0.5-1.5 default, 0.75 means 75% to 150%)
+        degrees=15,             # Degrees for rotation augmentation
+        translate=0.2,          # Translate augmentation
         project='runs/train',
         name='football_v3_large_fast',
         exist_ok=True

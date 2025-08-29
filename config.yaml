@@ -1,0 +1,52 @@
+# Global Configuration for Football AI Analysis Project
+
+# --- Pitch Dimensions (in meters) ---
+PITCH_LENGTH_M: 105
+PITCH_WIDTH_M: 68
+
+# --- Goal Dimensions (in meters) ---
+GOAL_WIDTH_M: 7.32 # Standard FIFA goal width
+
+# --- Visualization Settings ---
+METER_TO_PIXEL_SCALE: 10 # 1 meter = 10 pixels for visualization
+DISPLAY_WIDTH: 1050     # PITCH_LENGTH_M * METER_TO_PIXEL_SCALE
+DISPLAY_HEIGHT: 680     # PITCH_WIDTH_M * METER_TO_PIXEL_SCALE
+
+TEAM_COLORS:
+  0: [255, 100, 100] # BGR for OpenCV (Team 0 - Reddish)
+  1: [100, 100, 255] # BGR for OpenCV (Team 1 - Blueish)
+BALL_COLOR: [0, 255, 255] # Yellow
+POSSESSION_HIGHLIGHT_COLOR: [0, 255, 255] # Yellow
+LBP_COLOR: [0, 255, 0] # Green
+
+LINE_THICKNESS: 2
+FONT_SCALE: 0.7
+FONT_THICKNESS: 2
+
+# --- Analysis Thresholds (in meters/seconds) ---
+POSSESSION_THRESHOLD_M: 3 # Max distance for a player to be considered in possession of the ball
+MIN_POSSESSION_FRAMES: 3 # Minimum frames to confirm possession
+
+PRESSURE_RADIUS_M: 10 # Radius around ball carrier to consider opponents pressuring
+MIN_OPPONENTS_BYPASSED: 2 # Minimum opponents bypassed for a pass to be considered line-breaking
+
+SHOT_SPEED_THRESHOLD_MPS: 10 # Minimum ball speed change to consider a shot
+
+# --- Model Paths ---
+# These are defaults and can be overridden by command-line arguments in main.py
+YOLO_MODEL_PATH: "runs/train/football_v3_large_fast/weights/best.pt"
+
+# --- Data Paths (relative to project root) ---
+TRACKING_DATA_CSV: "tracking_data.csv"
+TRACKING_DATA_ENRICHED_CSV: "tracking_data_enriched.csv"
+HOMOGRAPHY_MATRIX_JSON: "homography_matrix.json"
+METADATA_JSON: "metadata.json"
+TEAM_MAPPING_CSV: "team_mapping.csv"
+
+# --- Output Files (relative to project root) ---
+POSSESSION_EVENTS_CSV: "possession_events.csv"
+PITCH_CONTROL_CSV: "pitch_control.csv"
+PRESSURE_METRICS_CSV: "pressure_metrics.csv"
+LINE_BREAKING_PASSES_CSV: "line_breaking_passes.csv"
+XG_METRICS_CSV: "xg_metrics.csv"
+TACTICAL_VIDEO_MP4: "tactical_video.mp4"
