@@ -1,14 +1,14 @@
-# ⚽️ Football AI Analysis
+# Football AI Analysis
 
 This project is a sophisticated, end-to-end football analytics platform that leverages computer vision and machine learning to extract tactical insights from match footage. It transforms raw video into a rich dataset of tracking information, which is then used to calculate advanced performance metrics and generate insightful visualizations.
 
 This project is designed to be a powerful tool for coaches, analysts, and enthusiasts who want to gain a deeper understanding of the beautiful game.
 
-## ✨ Features
+## Features
 
-*   **🏃‍♂️ Player & Ball Tracking:** Utilizes a custom-trained YOLOv8 model to accurately detect and track players, goalkeepers, referees, and the ball.
-*   **🌍 Real-World Coordinate System:** Implements homography to transform pixel coordinates into accurate, real-world pitch coordinates (in meters), enabling precise spatial and movement analysis.
-*   **🚀 Advanced Analytics (Meter-Based):** Calculates a suite of advanced metrics, now all based on real-world meter coordinates, including:
+*   ** Player & Ball Tracking:** Utilizes a custom-trained YOLOv8 model to accurately detect and track players, goalkeepers, referees, and the ball.
+*   ** Real-World Coordinate System:** Implements homography to transform pixel coordinates into accurate, real-world pitch coordinates (in meters), enabling precise spatial and movement analysis.
+*   ** Advanced Analytics (Meter-Based):** Calculates a suite of advanced metrics, now all based on real-world meter coordinates, including:
     *   **Velocity & Speed (m/s):** Measures the movement speed of every player and the ball in meters per second.
     *   **Team Assignment:** Automatically assigns players to their respective teams using KMeans clustering.
     *   **Possession Analysis:** Determines ball possession with high fidelity, using a meter-based threshold.
@@ -16,10 +16,10 @@ This project is designed to be a powerful tool for coaches, analysts, and enthus
     *   **Pressure Metrics:** Quantifies the pressure exerted on the ball carrier by nearby opponents, including average closing speed in m/s.
     *   **Line-Breaking Passes:** Identifies passes that penetrate defensive lines, based on player positions in meters.
     *   **Expected Goals (xG):** A heuristic model to assess shot quality, now using real-world distances and angles.
-*   **📺 Tactical Visualization:** Generates a "God's eye view" tactical video overlaying the analytics onto a 2D representation of the pitch, with all elements accurately scaled to real-world dimensions.
-*   **⚙️ Centralized Configuration:** Uses a `config.yaml` file to manage all project parameters, making it easy to customize and maintain.
+*   ** Tactical Visualization:** Generates a "God's eye view" tactical video overlaying the analytics onto a 2D representation of the pitch, with all elements accurately scaled to real-world dimensions.
+*   ** Centralized Configuration:** Uses a `config.yaml` file to manage all project parameters, making it easy to customize and maintain.
 
-## ⚙️ How It Works
+## How It Works
 
 The platform operates in a multi-stage pipeline:
 
@@ -28,7 +28,7 @@ The platform operates in a multi-stage pipeline:
 3.  **Analysis (`analysis.py`):** The raw tracking data is enriched using the homography matrix to convert all positions to real-world meter coordinates. It then calculates all advanced tactical metrics (possession, pitch control, pressure, line-breaking passes, xG) and saves them to separate CSV files.
 4.  **Visualization (`visualize_pitch_control.py`):** The enriched data and calculated metrics are used to generate a tactical video. This video provides a clear visual representation of the analytics, with players and events accurately mapped onto a scaled football pitch.
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 *   **Computer Vision:** OpenCV, Ultralytics (YOLOv8)
 *   **Machine Learning:** PyTorch, TensorFlow, Scikit-learn
@@ -37,7 +37,7 @@ The platform operates in a multi-stage pipeline:
 *   **Geometric Analysis:** Shapely
 *   **Configuration Management:** PyYAML
 
-## 🚀 Setup and Usage
+## Setup and Usage
 
 1.  **Clone the repository:**
     ```bash
@@ -85,7 +85,7 @@ The platform operates in a multi-stage pipeline:
         ```
         The output video will be saved as `tactical_video.mp4`.
 
-## 🔬 Development & Debugging Tools
+## Development & Debugging Tools
 
 *   **`visualize_annotations.py`:** Helps visually inspect bounding box annotations on a sample of images from your dataset. Useful for debugging annotation quality.
     ```bash
@@ -96,7 +96,7 @@ The platform operates in a multi-stage pipeline:
     python analyze_ball_annotations.py
     ```
 
-## 🔮 Future Work
+## Future Work
 
 *   **Improved Ball Detection:** Implement advanced data augmentation techniques (e.g., copy-paste augmentation) or explore specialized models to improve the detection of small, occluded balls.
 *   **Advanced xG Model:** Develop a more sophisticated xG model using machine learning, incorporating features like player positions, pressure, and shot type.
