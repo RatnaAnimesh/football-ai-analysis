@@ -6,9 +6,9 @@ This project is designed to be a powerful tool for coaches, analysts, and enthus
 
 ## Features
 
-*   ** Player & Ball Tracking:** Utilizes a custom-trained YOLOv8 model to accurately detect and track players, goalkeepers, referees, and the ball.
-*   ** Real-World Coordinate System:** Implements homography to transform pixel coordinates into accurate, real-world pitch coordinates (in meters), enabling precise spatial and movement analysis.
-*   ** Advanced Analytics (Meter-Based):** Calculates a suite of advanced metrics, now all based on real-world meter coordinates, including:
+*   **Player & Ball Tracking:** Utilizes a custom-trained YOLOv8 model to accurately detect and track players, goalkeepers, referees, and the ball.
+*   **Real-World Coordinate System:** Implements homography to transform pixel coordinates into accurate, real-world pitch coordinates (in meters), enabling precise spatial and movement analysis.
+*   **Advanced Analytics (Meter-Based):** Calculates a suite of advanced metrics, now all based on real-world meter coordinates, including:
     *   **Velocity & Speed (m/s):** Measures the movement speed of every player and the ball in meters per second.
     *   **Team Assignment:** Automatically assigns players to their respective teams using KMeans clustering.
     *   **Possession Analysis:** Determines ball possession with high fidelity, using a meter-based threshold.
